@@ -1,38 +1,52 @@
-# To run and test the code you need to update 4 places:
-# 1. Change MY_EMAIL/MY_PASSWORD to your own details.
-# 2. Go to your email provider and make it allow less secure apps.
-# 3. Update the SMTP ADDRESS to match your email provider.
-# 4. Update birthdays.csv to contain today's month and day.
-# See the solution video in the 100 Days of Python Course for explainations.
-
-
-from datetime import datetime
-import pandas
-import random
-import smtplib
 import os
+import requests
 
-# import os and use it to get the Github repository secrets
-MY_EMAIL = os.environ.get("MY_EMAIL")
-MY_PASSWORD = os.environ.get("MY_PASSWORD")
+api_key = os.environ.get("OWM_API_KEY")
+weather_url = "http://api.openweathermap.org/data/2.5/forecast"
+parameters = {
+    "lat": 25.5167,
+    "lon": 77.2333,
+    "units": "metric",
+    "appid" : api_key,
+    "cnt" : 4,
+    "lang" : "en"
+}
 
-today = datetime.now()
-today_tuple = (today.month, today.day)
+response = requests.get(weather_url, params=parameters)
+response.raise_for_status()
+data = response.json()
 
-data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
-if today_tuple in birthdays_dict:
-    birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
-    with open(file_path) as letter_file:
-        contents = letter_file.read()
-        contents = contents.replace("[NAME]", birthday_person["name"])
 
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
-        connection.starttls()
-        connection.login(MY_EMAIL, MY_PASSWORD)
-        connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
-        )
+def it_will_rain(report: dict):
+    for hour_data in report["list"]:
+        weather_id = int(hour_data['weather'][0]['id'])
+        if weather_id < 600:
+            return True
+    return False
+
+def telegram_bot_sendtext(bot_message):
+    bot_token = os.environ.get("TEL_BOT_TOKEN")
+    bot_chat_id = os.environ.get("TEL_CHAT_ID")
+
+    # ⚠️ Check this line closely! It must use f' and contain api.telegram.org/bot
+    send_text = 'https://api.telegram.org/bot'+bot_token+'/sendMessage?chat_id='+bot_chat_id+'&text='+bot_message
+
+    proxies = {
+        'http': 'http://proxy.server:3128',
+        'https': 'http://proxy.server:3128',
+    }
+
+    try:
+        response = requests.get(send_text, proxies=proxies)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
+
+if it_will_rain(data):
+    print("Rain forecast detected. Sending Telegram message...")
+    telegram_bot_sendtext("k")
+else:
+    print("No rain detected in the current 4-block forecast.")
