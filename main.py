@@ -2,7 +2,7 @@ import os
 import requests
 
 api_key = os.environ.get("OWM_API_KEY")
-weather_url = "http://api.openweathermap.org/data/3.3/forecast"
+weather_url = "http://api.openweathermap.org/data/2.5/forecast"
 parameters = {
     "lat": 25.5167,
     "lon": 77.2333,
