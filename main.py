@@ -47,6 +47,7 @@ def telegram_bot_sendtext(bot_message):
 
 if it_will_rain(data):
     print("Rain forecast detected. Sending Telegram message...")
-    telegram_bot_sendtext("k")
+    telegram_bot_sendtext("Carry an Umbrella")
 else:
     print("No rain detected in the current 4-block forecast.")
+    telegram_bot_sendtext("No need to carry an Umbrella")
